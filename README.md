@@ -71,7 +71,7 @@ To give you an example, with a `1200px X 800px` image I noticed a boost in RAM u
 
 The memory usage increases rapidly with the input image size! Start testing with smaller images, then gradually increase the image size.
 
-**It would be nice if someone (with a decent amount of RAM) could create a plot relating image size (pixels) vs memory used (see section *TODO* point 2).**
+**It would be nice if someone (with a decent amount of RAM) could create a plot relating image size (pixels) vs memory used (see section *TODO* point 1).**
 
 ## TODO
 
