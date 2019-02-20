@@ -1,9 +1,7 @@
 #!/usr/bin/python
 
 # GIMP Style Transfer
-# This plugin implements the Neural Style Transfer. At the moment, the following
-# approaches are implemented:
-#   1. https://github.com/CompVis/adaptive-style-transfer
+# This plugin implements different approaches to Neural Style Transfer. 
 # Copyright (c) 2019 Davide Sandona'
 # sandona [dot] davide [at] gmail [dot] com
 # https://github.com/Davide-sd/GIMP-style-transfer
