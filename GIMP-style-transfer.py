@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
 # GIMP Style Transfer
-# This plugin implements different approaches to Neural Style Transfer. 
+# This plugin implements the Neural Style Transfer. At the moment, the following
+# approaches are implemented:
+#   1. https://github.com/CompVis/adaptive-style-transfer
 # Copyright (c) 2019 Davide Sandona'
 # sandona [dot] davide [at] gmail [dot] com
 # https://github.com/Davide-sd/GIMP-style-transfer
@@ -27,6 +29,59 @@ import numpy as np
 from implementation_1.gimp_evaluate import inference as inference_1
 # TODO: WHY THE RESULTING LAYER IS A LITTLE BIT BIGGER THAN INPUT LAYER WITH implementation_2???
 from implementation_2.gimp_evaluate import inference as inference_2
+from implementation_3.gimp_evaluate import inference as inference_3
+
+# the following three functions are used by all the plugins
+def channelData(layer):
+    """ Returns a numpy array of the size [height, width, bpp] of the input layer.
+    bpp stands for Bytes Per Pixel.
+    """
+    w, h = layer.width, layer.height
+    region = layer.get_pixel_rgn(0, 0, w, h)
+    pixChars = region[:, :]
+    bpp = region.bpp
+    return np.frombuffer(pixChars, dtype=np.uint8).reshape(h, w, bpp)
+
+def createResultLayer(image, name, result):
+    """ Create and add a new layer to the image.
+    Input parameters:
+        image   : the image where to add the new layer
+        name    : the layer name
+        result  : the pixels color informations for the new layer
+    """
+    rlBytes = np.uint8(result).tobytes()
+    rl = gimp.Layer(image, name, result.shape[1], result.shape[0],
+                  image.active_layer.type, 100, NORMAL_MODE)
+    region = rl.get_pixel_rgn(0, 0, rl.width, rl.height, True)
+    region[:, :] = rlBytes
+    image.add_layer(rl, 0)
+    gimp.displays_flush()
+
+def get_images_to_process(layer):
+    """ Check if the given layer is a Layer Group.
+    Input parameters:
+        layer: the layer to check
+
+    Output parameters:
+        images  :   a list of numpy arrays obtained with channelData,
+                    representing the selected layers
+        names   :   a list of names of selected layers
+    """
+    images = []
+    names = []
+    if (type(layer) == gimp.GroupLayer):
+        for l in layer.layers:
+            images.append(channelData(l))
+            names.append(l.name)
+    else:
+        images.append(channelData(layer))
+        names.append(layer.name)
+
+    return images, names
+
+################################################################################
+######################### IMPLEMENTATION 1 AND 2 ###############################
+################################################################################
 
 # The user may not have downloaded all the models. Need to check which models are
 # available to properly add the options on the plugin comboboxes.
@@ -88,63 +143,40 @@ artists = checkModelsAvailability(artist_style_transfer_dict, "implementation_2"
 styles.sort()
 artists.sort()
 
-def fast_style_transfer(image, style):
+def fast_style_transfer(image, style, layer):
     if style == -1:
         pdb.gimp_message("There are no model available: exiting execution.")
         return
 
     model_name = getModelName(style_transfer_dict, styles, style)
-    style_transfer_function(image, model_name, inference_1)
+    style_transfer_function(image, layer, model_name, inference_1)
 
-def artist_style_transfer(image, style):
+def artist_style_transfer(image, style, layer):
     if style == -1:
         pdb.gimp_message("There are no model available: exiting execution.")
         return
 
     model_name = getModelName(artist_style_transfer_dict, artists, style)
-    style_transfer_function(image, model_name, inference_2)
+    style_transfer_function(image, layer, model_name, inference_2)
 
-def channelData(layer):
-    """ Returns a numpy array of the size [height, width, bpp] of the input layer.
-    bpp stands for Bytes Per Pixel.
-    """
-    w, h = layer.width, layer.height
-    region = layer.get_pixel_rgn(0, 0, w, h)
-    pixChars = region[:, :]
-    bpp = region.bpp
-    return np.frombuffer(pixChars, dtype=np.uint8).reshape(h, w, bpp)
-
-def createResultLayer(image, name, result):
-    """ Create and add a new layer to the image.
-    Input parameters:
-        image   : the image where to add the new layer
-        name    : the layer name
-        result  : the pixels color informations for the new layer
-    """
-    rlBytes = np.uint8(result).tobytes()
-    rl = gimp.Layer(image, name, result.shape[1], result.shape[0],
-                  image.active_layer.type, 100, NORMAL_MODE)
-    region = rl.get_pixel_rgn(0, 0, rl.width, rl.height, True)
-    region[:, :] = rlBytes
-    image.add_layer(rl, 0)
-    gimp.displays_flush()
-
-def style_transfer_function(image, style_name, style_transfer):
+def style_transfer_function(image, layer, style_name, style_transfer):
     # Set up an undo group, so the operation will be undone in one step.
     pdb.gimp_image_undo_group_start(image)
 
-    # get active layer
-    layer = image.active_layer
-    # get name of the active layer
-    layer_name = pdb.gimp_item_get_name(layer)
-    # new name for the processed layer
-    layer_name += "-" + style_name
-    # get the pixels color informations
-    pixelData = channelData(layer)
+    # get content images data and names
+    content_images, content_names = get_images_to_process(layer)
+
+    # prepare the output layers name
+    result_names = []
+    for c_name in content_names:
+        result_names.append(c_name + "-" + style_name)
+
     # apply the style transfer
-    pixelDataOut = style_transfer(pixelData, style_name)
-    # add the new layer to the image
-    createResultLayer(image, layer_name, pixelDataOut)
+    pixelDataOutList = style_transfer(content_images, style_name)
+
+    # add the new layers to the image
+    for pixelDataOut, result_name in zip(pixelDataOutList, result_names):
+        createResultLayer(image, result_name, pixelDataOut)
 
     # Close the undo group.
     pdb.gimp_image_undo_group_end(image)
@@ -162,7 +194,8 @@ register(
         "RGB*, GRAY*",
         [
             (PF_IMAGE, "image", "Input image", None),
-            (PF_OPTION, "style", "Style", 2, tuple(styles))
+            (PF_OPTION, "style", "Style", 2, tuple(styles)),
+            (PF_LAYER, "layer", "Content layer", None),
         ],
         [],
         fast_style_transfer,
@@ -179,10 +212,60 @@ register(
         "RGB*, GRAY*",
         [
             (PF_IMAGE, "image", "Input image", None),
-            (PF_OPTION, "style", "Style", 2, tuple(artists))
+            (PF_OPTION, "style", "Style", 2, tuple(artists)),
+            (PF_LAYER, "layer", "Content layer", None),
         ],
         [],
         artist_style_transfer,
+        menu="<Image>/Filters/Style Transfer")
+
+################################################################################
+############################ IMPLEMENTATION 3 ##################################
+################################################################################
+
+def arbitrary_style_transfer(image, alpha, layer_content, layer_style):
+    # Set up an undo group, so the operation will be undone in one step.
+    pdb.gimp_image_undo_group_start(image)
+
+    # get content and style images and names
+    content_images, content_names = get_images_to_process(layer_content)
+    style_images, style_names = get_images_to_process(layer_style)
+
+    # get layers name
+    result_names = []
+    for c_name in content_names:
+        for s_name in style_names:
+            result_names.append(c_name + "-" + s_name)
+
+    # apply the style transfer
+    pixelDataOutList = inference_3(content_images, style_images, alpha / 100.0)
+
+    # add the new layers to the image
+    for pixelDataOut, result_name in zip(pixelDataOutList, result_names):
+        createResultLayer(image, result_name, pixelDataOut)
+
+    # Close the undo group.
+    pdb.gimp_image_undo_group_end(image)
+    # End progress.
+    pdb.gimp_progress_end()
+
+register(
+        "python_fu_arbitrary_style_transfer",
+        "Apply to a target image the style of a specified style image.",
+        "Apply to a target image the style of a specified style image.",
+        "Davide Sandona'",
+        "Davide Sandona'",
+        "2019",
+        "Arbitrary Style Transfer...",
+        "RGB*, GRAY*",
+        [
+            (PF_IMAGE, "image", "Input image", None),
+            (PF_SLIDER, "alpha",  "Alpha", 100, (0, 100, 1)),
+            (PF_LAYER, "layer_content", "Content layer", None),
+            (PF_LAYER, "layer_style", "Style layer", None),
+        ],
+        [],
+        arbitrary_style_transfer,
         menu="<Image>/Filters/Style Transfer")
 
 main()

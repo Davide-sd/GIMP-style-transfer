@@ -2,27 +2,56 @@
 
 **This is a prototype plugin (or a proof of concept, if you wish) intended to demonstrate the feasibility to expand GIMP abilities with state of the art machine learning algorithms.**
 
-This plugin adds the ability to perform Neural Style Transfer: this techniques reconstruct a *content image* (the selected GIMP layer) with the style of a *style image* (selected with the plugin).
+This plugin adds the ability to perform Neural Style Transfer, which reconstruct a *content image* (the selected GIMP layer) with the style of a *style image* (selected with the plugin).
 
 You may have used apps that do this kind of processing, like [Prisma](https://prisma-ai.com/) (or something similar).
 
 At the moment, the following approaches are implemented in the plugin:
-* [Fast Style Transfer](https://github.com/lengstrom/fast-style-transfer): transfer the style of  well know paintings to your images. This approach produces really nice results. As of now, only 6 style models are available.  
-I have not yet received authorization to release its code. Follow *Install instruction* below to get this implementation working.
-* [Adaptive Style Transfer implementation](https://github.com/CompVis/adaptive-style-transfer): apply the style of a given artist to your image. This is a very interesting approach, but it is also much more difficult to get appreciable results. Feel free to experiment with it, also changing the blend mode and opacity of the resulting layer to get a satisfying final effect.  
-As of now, 13 artists have been implemented. From here on, I'll refer to this approach as **Artist Style Transfer** because it better represent what it actual does.
+
+* **Style Transfer**. Based on [Fast Style Transfer](https://github.com/lengstrom/fast-style-transfer): transfer the style of well know paintings to your images.
+I have not yet received authorization to release its code. Follow *Install instruction* below to get this implementation working.  
+Once installed, you will find it in the menu `Filters/Style Transfer/Style Transfer...`.
+
+| Pros | Cons |
+|-------------------------------------|----------------------------------------------------|
+| Fast | Only 6 styles available |
+| Nice results | Eventually, need to train new models |
+| Style's model file size not too big | Training requires expensive GPUs and a lot of time |
+|  | By adding new styles, we need more storage space for them  |
+
+* **Artist Style Transfer**. Based on [Adaptive Style Transfer implementation](https://github.com/CompVis/adaptive-style-transfer): apply the style of a given artist to your image.  
+Once installed, you will find it in the menu `Filters/Style Transfer/Artist Style Transfer...`.
+
+| Pros | Cons |
+|------|------------------------------------------------------------------------------------------|
+| Fast | Only 13 artists available |
+|  | Eventually, need to train new models |
+|  | Training requires expensive GPUs and a lot of time |
+|  | Big model file size (requires a lot of storage space) |
+|  | Quality of the result varies a lot depending on the content image and the style selected |
+
+* **Arbitrary Style Transfer**. Based on [Adaptive Style Transfer](https://github.com/tensorlayer/adaptive-style-transfer) developed by the [Tensorlayer team](https://github.com/tensorlayer/tensorlayer): transfer the style of a given image to your content images.  
+Once installed, you will find it in the menu `Filters/Style Transfer/Arbitrary Style Transfer...`.
+
+| Pros | Cons |
+|------------------------------------------------------------------------|-----------------------------------|
+| Fast | Little bit slower than the others |
+| No need to train new models for a new style |  |
+| Overall small file size because it only stores the 2 pretrained models |  |
 
 Please, take a look at the repositories linked above to get a visual idea of what this plugin allows us to do.
 
 ## Requirements
 
-I developed this plugin on Ubuntu 18.04, GIMP 2.10.8, Python 2.7. AFAIK *tensorflow* requires Python 3.5+ on Windows to work, therefore I strongly believe that this plugin will not work on Windows.
+I developed this plugin on Ubuntu 18.04, GIMP 2.10.8, Python 2.7. AFAIK *tensorflow* requires Python 3.5+ on Windows to work, therefore I strongly believe this plugin will not work on Windows (feel free to try and prove me wrong).
 
 * Install [Tensorflow](https://www.tensorflow.org/install) on the Python environment used by GIMP (usually version 2.7) with `pip install tensorflow`.  
 I tested this plugin with `tensorflow` CPU only. Feel free to test it also with `tensorflow-gpu` by installing the module `pip install tensorflow-gpu` (you need a CUDA-enabled GPU card).  
-Note: if you are using an *old* CPU that does not support AVX instruction set, you will have to either install Tensorflow version 1.5 (`pip install tensorflow tensorflow==1.5`) or [build the latest version from source](https://www.tensorflow.org/install/source) (it may take a while on older CPU).
+Note: if you are using an *old* CPU that does not support AVX instruction set, you will have to [build the latest version from source](https://www.tensorflow.org/install/source) (it may take a while on older CPU).
 
-* You also need to install the following Python packages: `PIL, numpy, scipy`
+* Install the following Python packages: `PIL, numpy, scipy, tensorlayer`
+
+* You also need to install `python-tk` with the command: `sudo apt-get install python-tk`
 
 ## Install
 
@@ -34,9 +63,9 @@ Note: if you are using an *old* CPU that does not support AVX instruction set, y
 
 4. Change permission to allow execution: `chmod +x GIMP-style-transfer.py`
 
-5. Don't forget to apply the following steps: *Setting up Fast Style Transfer* and/or *Setting up Artist Style Transfer*.
+5. Don't forget to apply the following steps: *Setting up Style Transfer* and/or *Setting up Artist Style Transfer* and/or *Setting up Arbitrary Style Transfer*.
 
-### Setting up [Fast Style Transfer](https://github.com/lengstrom/fast-style-transfer)
+### Setting up [Style Transfer](https://github.com/lengstrom/fast-style-transfer)
 
 Since I have not yet received any reply to my inquire regarding the possibility of releasing that code, you have to follow these steps to get it working.
 
@@ -55,13 +84,39 @@ You can download only the models you are interested in (the plugin will adapt ac
 
 At this point you should be able to use the plugin located in the menu `Filters/Style Transfer/Artist Style Transfer...`.
 
+### Setting up [Arbitrary Style Transfer](https://github.com/tensorlayer/adaptive-style-transfer)
+
+1. Download pretrained models. This will result in 40.2MB of data (click the following links and then the Download button):  
+    * [pretrained_vgg19_decoder_model.npz](https://github.com/tensorlayer/pretrained-models/blob/master/models/style_transfer_models_and_examples/pretrained_vgg19_decoder_model.npz)
+    * [pretrained_vgg19_encoder_model.npz](https://github.com/tensorlayer/pretrained-models/blob/master/models/style_transfer_models_and_examples/pretrained_vgg19_encoder_model.npz)
+2. Move the downloaded files into `GIMP-style-transfer/implementation_3/models`
+
+At this point you should be able to use the plugin located in the menu `Filters/Style Transfer/Arbitrary Style Transfer...`.
+
 ## Usage
 
-1. Open an image (start playing with small images, read the next section carefully!).
-2. In the layer palette, select the layer you want to apply the style transfer.
-3. Click on `Filters/Style Transfer/Artist Style Transfer...` or `Filters/Style Transfer/Style Transfer...`
-4. Select the desired option from the combobox.
+For the following plugins, you can either select a single layer or a group layer. In the latter case, the selected style will be transferred to all the sub-layers.
+
+### Style Transfer and Artist Style Transfer
+
+1. Open an image (start playing with small images, read the **Memory Usage** section carefully!).
+2. Click on `Filters/Style Transfer/Artist Style Transfer...` or `Filters/Style Transfer/Style Transfer...`
+3. Select the desired style from the combobox.
+4. Select the desired layer.
 5. Click `Ok` and wait for the process to complete.
+
+| ![Style Transfer plugin UI](screenshots/style_transfer.png) | ![Artist Style Transfer plugin UI](screenshots/artist_style_transfer.png) |
+|-------------------------------------------------------------|---------------------------------------------------------------------------|
+
+### Arbitrary Style Transfer
+
+1. Open an image (start playing with small images, read the **Memory Usage** section carefully!).
+2. Click on `Filters/Style Transfer/Arbitrary Style Transfer...`
+3. Select the style layer.
+4. Select the content layer.
+5. Click `Ok` and wait for the process to complete.
+
+![Arbitrary Style Transfer plugin UI](screenshots/arbitrary_style_transfer.png)
 
 ## Memory Usage
 

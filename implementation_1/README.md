@@ -1,6 +1,6 @@
-# Fast Style Transfer
+# Style Transfer
 
-This implementation is based on [Fast Style Transfer](https://github.com/lengstrom/fast-style-transfer).
+This implementation is based on [Fast Style Transfer](https://github.com/lengstrom/fast-style-transfer) developed by [lengstrom](https://github.com/lengstrom).
 
 Since I have not yet received any reply to my inquire regarding the possibility of releasing that code, you have to follow these steps to get it working.
 
