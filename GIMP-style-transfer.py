@@ -98,7 +98,6 @@ def checkModelsAvailability(modelsDict, implementation):
             checkpoint_path = os.path.join(checkpoint_path, v + ".ckpt")
         elif implementation == "implementation_2":
             checkpoint_path = os.path.join(checkpoint_path, v, "checkpoint_long")
-            checkpoint_path = os.path.join("/media/davide/Local Disk/Database/models", v, "checkpoint_long")
         if os.path.exists(checkpoint_path):
             availableModels.append(k)
     return availableModels
