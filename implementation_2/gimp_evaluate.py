@@ -8,10 +8,17 @@ import numpy as np
 import tensorflow as tf
 from module import encoder, decoder
 from utils import normalize_arr_of_imgs, denormalize_arr_of_imgs
+from commons import get_img, save_img
 
-root_models_dir = os.path.join(pluginFolderPath, "models/")
+root_models_dir = "./models"
+root_models_dir = "/media/davide/Local Disk/Database/models"
 
-def inference(img, style_name, batch_size=1, device_t='/gpu:0'):
+# Even though we could apply style transfer to a batch of images with one pass,
+# I decided to limit it to the value of 1 because the image we are processing may
+# be big, and memory consumption could be a problem... Need further testing to
+# evaluate the possibility to increment this value.
+def inference(from_file_path, args, batch_size=1, device_t='/gpu:0'):
+    imgs, style_name = args[0:2]
     # check if the specified model exists
     checkpoint_dir = os.path.join(root_models_dir, style_name, "checkpoint_long")
     assert os.path.exists(checkpoint_dir), 'Checkpoint not found!'
@@ -23,6 +30,7 @@ def inference(img, style_name, batch_size=1, device_t='/gpu:0'):
 
     tfconfig = tf.ConfigProto(allow_soft_placement=False) # THIS IS DIFFERENT FROM IMPL_1
     tfconfig.gpu_options.allow_growth = True
+    tf.reset_default_graph()
     with tf.Session(config=tfconfig) as sess:
         # ==================== Define placeholders. ===================== #
         with tf.name_scope('placeholder'):
@@ -58,6 +66,17 @@ def inference(img, style_name, batch_size=1, device_t='/gpu:0'):
 
         print(" [*] Load SUCCESS")
 
+        model_args = (sess, input_photo, output_photo)
+        if from_file_path:
+            run_from_file_paths(model_args, args)
+        else:
+            return run_from_layers(model_args, args[0])
+
+def run_from_layers(model_args, imgs):
+    sess, input_photo, output_photo = model_args
+
+    processed = []
+    for img in imgs:
         img = np.expand_dims(img, axis=0)
         img = sess.run(
                 output_photo,
@@ -66,9 +85,34 @@ def inference(img, style_name, batch_size=1, device_t='/gpu:0'):
                 }
             )
 
-        img = img[0]
-        img = denormalize_arr_of_imgs(img)
+        img = denormalize_arr_of_imgs(img[0])
+        processed.append(img)
 
-        print("Inference is finished.")
+    print("Inference is finished.")
 
-        return img
+    return processed
+
+def run_from_file_paths(model_args, input_args):
+    sess, input_photo, output_photo = model_args
+    imgs, style_name, output_folder, progress_update, tmp = input_args
+
+    for i, content_path in enumerate(imgs):
+        img = get_img(content_path)
+        img = np.expand_dims(img, axis=0)
+
+        img = sess.run(
+                output_photo,
+                feed_dict={
+                    input_photo: normalize_arr_of_imgs(img),
+                }
+            )
+
+        img = denormalize_arr_of_imgs(img[0])
+
+        # generate output path
+        content_name = os.path.basename(content_path)
+        file_ext = os.path.splitext(content_name)
+        output_path = os.path.join(output_folder, file_ext[0] + "-" + style_name + file_ext[1])
+
+        save_img(output_path, img)
+        progress_update((tmp["completed"] + float(i + 1)) / tmp["tot"])

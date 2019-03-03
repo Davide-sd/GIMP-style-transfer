@@ -1,6 +1,7 @@
 import os, sys
 import numpy as np
 import tensorflow as tf
+from commons import get_img, save_img
 
 # get the path of this file: gimp_evaluate.py
 pluginFolderPath = os.path.dirname(os.path.abspath(__file__))
@@ -24,8 +25,9 @@ def AdaIN(content_features, style_features, alpha=1, epsilon=1e-5):
     normalized_content_features = alpha * normalized_content_features + (1 - alpha) * content_features
     return normalized_content_features
 
-def inference(content_images, style_images, alpha=1, device_t='/gpu:0'):
+def inference(from_file_path, args):
     with tf.Graph().as_default(), tf.Session() as sess:
+        alpha = args[0]
 
         encoder = Encoder()
         decoder = Decoder()
@@ -68,17 +70,55 @@ def inference(content_images, style_images, alpha=1, device_t='/gpu:0'):
         encoder.restore_model(sess, ENCODER_PATH, enc_s_net)
         decoder.restore_model(sess, DECODER_PATH, dec_net)
 
-        processed = []
-        for content_image in content_images:
-            for style_image in style_images:
-                content_tensor = np.expand_dims(content_image, axis=0)
-                style_tensor = np.expand_dims(style_image, axis=0)
-                result = sess.run(
-                            generated_img,
-                            feed_dict={
-                                content_input: content_tensor,
-                                style_input: style_tensor
-                            })
-                processed.append(result[0])
+        model_args = (sess, generated_img, content_input, style_input)
+        if from_file_path:
+            run_from_file_paths(model_args, args)
+        else:
+            return run_from_layers(model_args, args)
 
-        return processed
+def run_from_layers(model_args, input_args):
+    sess, generated_img, content_input, style_input = model_args
+    alpha, content_images, style_images = input_args
+
+    processed = []
+    for content_image in content_images:
+        for style_image in style_images:
+            content_tensor = np.expand_dims(content_image, axis=0)
+            style_tensor = np.expand_dims(style_image, axis=0)
+            result = sess.run(
+                        generated_img,
+                        feed_dict={
+                            content_input: content_tensor,
+                            style_input: style_tensor
+                        })
+            processed.append(result[0])
+
+    return processed
+
+def run_from_file_paths(model_args, input_args):
+    sess, generated_img, content_input, style_input = model_args
+    alpha, content_images, style_images, output_folder, progress_update = input_args
+
+    n_imgs = len(style_images) * len(content_images)
+    for i, content_image in enumerate(content_images):
+        content_image = get_img(content_image)
+        for j, style_image in enumerate(style_images):
+            style_image = get_img(style_image)
+
+            content_tensor = np.expand_dims(content_image, axis=0)
+            style_tensor = np.expand_dims(style_image, axis=0)
+            result = sess.run(
+                        generated_img,
+                        feed_dict={
+                            content_input: content_tensor,
+                            style_input: style_tensor
+                        })
+            # assemble the output file name
+            style_img_split = os.path.splitext(os.path.basename(style_images[j]))
+            content_img_split = os.path.splitext(os.path.basename(content_images[i]))
+            output_image_path = content_img_split[0] + "-" + style_img_split[0] + content_img_split[1]
+            output_image_path = os.path.join(output_folder, output_image_path)
+            save_img(output_image_path, result[0])
+            # update the gimp progress bar
+            curr_img = float(i * len(style_images) + (j + 1))
+            progress_update(curr_img / n_imgs)

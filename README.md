@@ -6,6 +6,16 @@ This plugin adds the ability to perform Neural Style Transfer, which reconstruct
 
 You may have used apps that do this kind of processing, like [Prisma](https://prisma-ai.com/) (or something similar).
 
+You can apply style transfer in two ways:
+1. As a filter on a selected layer.
+2. In batch mode to a folder containing your content pictures.
+
+Please, see section **Usage** for more instructions.
+
+![Gimp Style transfer example](screenshots/arbitrary-example.jpg)
+
+## Implementations
+
 At the moment, the following approaches are implemented in the plugin:
 
 * **Style Transfer**. Based on [Fast Style Transfer](https://github.com/lengstrom/fast-style-transfer): transfer the style of well know paintings to your images.
@@ -97,7 +107,7 @@ At this point you should be able to use the plugin located in the menu `Filters/
 
 For the following plugins, you can either select a single layer or a group layer. In the latter case, the selected style will be transferred to all the sub-layers.
 
-### Style Transfer and Artist Style Transfer
+### Style Transfer and Artist Style Transfer Filter
 
 1. Open an image (start playing with small images, read the **Memory Usage** section carefully!).
 2. Click on `Filters/Style Transfer/Artist Style Transfer...` or `Filters/Style Transfer/Style Transfer...`
@@ -108,15 +118,27 @@ For the following plugins, you can either select a single layer or a group layer
 | ![Style Transfer plugin UI](screenshots/style_transfer.png) | ![Artist Style Transfer plugin UI](screenshots/artist_style_transfer.png) |
 |-------------------------------------------------------------|---------------------------------------------------------------------------|
 
-### Arbitrary Style Transfer
+### Arbitrary Style Transfer Filter
 
-1. Open an image (start playing with small images, read the **Memory Usage** section carefully!).
+1. Open an image (start playing with small images, read the **Memory Usage** section carefully!). The image must contains two or more layers. The layers can have different dimensions from each other.
 2. Click on `Filters/Style Transfer/Arbitrary Style Transfer...`
 3. Select the style layer.
 4. Select the content layer.
 5. Click `Ok` and wait for the process to complete.
 
 ![Arbitrary Style Transfer plugin UI](screenshots/arbitrary_style_transfer.png)
+
+### Batch Mode
+
+You can apply style transfer to a folder containing your content pictures.
+
+1. Click on `File/Batch Style Transfer/` and select the desired implementation to run.
+2. Select the folder containing your images.
+3. Select the style to apply.
+4. Click `OK` and wait for the transfer to complete.
+
+| ![Batch Style Transfer plugin UI](screenshots/batch_style_transfer.png) | ![Batch Artist Style Transfer plugin UI](screenshots/batch_artist_style_transfer.png) | ![Batch Arbitrary Style Transfer plugin UI](screenshots/batch_arbitrary_style_transfer.png) |
+|-------------------------------------------------------------------------|---------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
 
 ## Memory Usage
 
