@@ -155,9 +155,7 @@ The memory usage increases rapidly with the input image size! Start testing with
 
 2. Look at the possibility to extract only the meaningfull weights from the [Artist Style Transfer implementation](https://github.com/CompVis/adaptive-style-transfer) models, in order to significantly reduce their file sizes.
 
-3. Artist Style Transfer produces an output image slightly bigger then input. Why and how to fix it?
-
-4. Look for strategies to get this plugin working on Windows.
+3. Look for strategies to get this plugin working on Windows.
 
 ## FAQ
 
