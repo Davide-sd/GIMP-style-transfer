@@ -10,8 +10,12 @@ from module import encoder, decoder
 from utils import normalize_arr_of_imgs, denormalize_arr_of_imgs
 from commons import get_img, save_img
 
+from scipy.misc import imresize
+
 root_models_dir = "./models"
-root_models_dir = "/media/davide/Local Disk/Database/models"
+# this parameters is recommended in the original implementation
+# TODO: investigate the possibility to make this a plugin parameter
+image_size = 1280
 
 # Even though we could apply style transfer to a batch of images with one pass,
 # I decided to limit it to the value of 1 because the image we are processing may
@@ -52,8 +56,6 @@ def inference(from_file_path, args, batch_size=1, device_t='/gpu:0'):
         init_op = tf.global_variables_initializer()
         sess.run(init_op)
 
-        print("Start inference.")
-
         saver = tf.train.Saver()
         if os.path.isdir(checkpoint_dir):
             ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
@@ -63,8 +65,6 @@ def inference(from_file_path, args, batch_size=1, device_t='/gpu:0'):
                 raise Exception("No checkpoint found...")
         else:
             saver.restore(sess, checkpoint_dir)
-
-        print(" [*] Load SUCCESS")
 
         model_args = (sess, input_photo, output_photo)
         if from_file_path:
@@ -77,6 +77,11 @@ def run_from_layers(model_args, imgs):
 
     processed = []
     for img in imgs:
+        img_shape = img.shape[:2]
+        # Resize the smallest side of the image to the image_size
+        alpha = float(image_size) / float(min(img_shape))
+        img = imresize(img, size=alpha)
+
         img = np.expand_dims(img, axis=0)
         img = sess.run(
                 output_photo,
@@ -86,9 +91,8 @@ def run_from_layers(model_args, imgs):
             )
 
         img = denormalize_arr_of_imgs(img[0])
+        img = imresize(img, size=img_shape)
         processed.append(img)
-
-    print("Inference is finished.")
 
     return processed
 
@@ -98,8 +102,13 @@ def run_from_file_paths(model_args, input_args):
 
     for i, content_path in enumerate(imgs):
         img = get_img(content_path)
-        img = np.expand_dims(img, axis=0)
 
+        img_shape = img.shape[:2]
+        # Resize the smallest side of the image to the image_size
+        alpha = float(image_size) / float(min(img_shape))
+        img = imresize(img, size=alpha)
+
+        img = np.expand_dims(img, axis=0)
         img = sess.run(
                 output_photo,
                 feed_dict={
@@ -108,6 +117,7 @@ def run_from_file_paths(model_args, input_args):
             )
 
         img = denormalize_arr_of_imgs(img[0])
+        img = imresize(img, size=img_shape)
 
         # generate output path
         content_name = os.path.basename(content_path)

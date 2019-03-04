@@ -38,7 +38,6 @@ Once installed, you will find it in the menu `Filters/Style Transfer/Artist Styl
 |  | Eventually, need to train new models |
 |  | Training requires expensive GPUs and a lot of time |
 |  | Big model file size (requires a lot of storage space) |
-|  | Quality of the result varies a lot depending on the content image and the style selected |
 
 * **Arbitrary Style Transfer**. Based on [Adaptive Style Transfer](https://github.com/tensorlayer/adaptive-style-transfer) developed by the [Tensorlayer team](https://github.com/tensorlayer/tensorlayer): transfer the style of a given image to your content images.  
 Once installed, you will find it in the menu `Filters/Style Transfer/Arbitrary Style Transfer...`.
