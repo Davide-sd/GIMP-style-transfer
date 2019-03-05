@@ -164,22 +164,28 @@ def implementation_2():
 
     for i, k in enumerate(artists_to_process):
         v = artist_style_transfer[k]
-        # download
-        print("{0}/{1}\tDownloading the model archive for '{2}'".format(i+1, len(artists_to_process), k))
-        destination_path = os.path.join(tmp_folder, v)
-        if not os.path.exists(destination_path):
-            download_file(base_url + v, destination_path)
-        else:
-            print("\tThe model {0} already exists. Skipping this download.".format(filename))
+        model = v.replace("_ckpt", "").split(".")[0]
+        model_folder = os.path.join(pluginFolderPath, "implementation_2/models", model)
+        if not os.path.exists(model_folder):
+            # download
+            print("{0}/{1}\tDownloading the model archive for '{2}'".format(i+1, len(artists_to_process), k))
+            destination_path = os.path.join(tmp_folder, v)
+            if not os.path.exists(destination_path):
+                download_file(base_url + v, destination_path)
+                pass
+            else:
+                print("\tThe model {0} already exists. Skipping this download.".format(filename))
 
-        # extract
-        print("\tExtracting {0}...".format(v))
-        tar = tarfile.open(destination_path, "r:gz")
-        tar.extractall()
-        tar.close()
-        print("\tExtraction complete! Removing temporary file {0}.".format(v))
-        # delete
-        os.remove(destination_path)
+            # extract
+            print("\tExtracting {0}...".format(v))
+            tar = tarfile.open(destination_path, "r:gz")
+            tar.extractall()
+            tar.close()
+            print("\tExtraction complete! Removing temporary file {0}.".format(v))
+            # delete
+            os.remove(destination_path)
+        else:
+            print("{0}/{1}\t{2} already exists. Skipping download!!!".format(i+1, len(artists_to_process), model))
 
     print("\nImplementation_2 (Artist Style Transfer) is ready to be used!!!")
 
@@ -207,23 +213,22 @@ def implementation_3():
     print("\nImplementation_3 (Arbitrary Style Transfer) is ready to be used!!!")
 
 if __name__ == "__main__":
+    def print_error_msg(n, url):
+        print("""\nSomething went wrong with the setup of Implementation_{0} (Style
+        Transfer). Please, try to follow the manual procedure:
+        {1}""".format(n, url))
+
     try:
         implementation_1()
     except:
-        print("""\nSomething went wrong with the setup of Implementation_1 (Style
-        Transfer). Please, try to follow the manual procedure:
-        https://github.com/Davide-sd/GIMP-style-transfer#setting-up-style-transfer""")
+        print_error_msg(1, "https://github.com/Davide-sd/GIMP-style-transfer#setting-up-style-transfer")
 
     try:
         implementation_2()
     except:
-        print("""\nSomething went wrong with the setup of Implementation_2
-        (Artist Style Transfer). Please, try to follow the manual procedure:
-        https://github.com/Davide-sd/GIMP-style-transfer#setting-up-artist-style-transfer""")
+        print_error_msg(2, "https://github.com/Davide-sd/GIMP-style-transfer#setting-up-artist-style-transfer")
 
     try:
         implementation_3()
     except:
-        print("""\nSomething went wrong with the setup of Implementation_3 (Arbitrary
-        Style Transfer). Please, try to follow the manual procedure:
-        https://github.com/Davide-sd/GIMP-style-transfer#setting-up-arbitrary-style-transfer""")
+        print_error_msg(3, "https://github.com/Davide-sd/GIMP-style-transfer#setting-up-arbitrary-style-transfer")
