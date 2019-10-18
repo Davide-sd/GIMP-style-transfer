@@ -217,6 +217,16 @@ if __name__ == "__main__":
         print("""\nSomething went wrong with the setup of Implementation_{0} (Style
         Transfer). Please, try to follow the manual procedure:
         {1}""".format(n, url))
+    
+    try:
+        if not os.path.exists(os.path.join(pluginFolderPath, "implementation_1/models")):
+            os.mkdir(os.path.join(pluginFolderPath, "implementation_1/models"))
+        if not os.path.exists(os.path.join(pluginFolderPath, "implementation_2/models")):
+            os.mkdir(os.path.join(pluginFolderPath, "implementation_2/models"))
+        if not os.path.exists(os.path.join(pluginFolderPath, "implementation_3/models")):
+            os.mkdir(os.path.join(pluginFolderPath, "implementation_3/models"))
+    except:
+        print("Something went wrong during folder creation. Attempting to continue.")
 
     try:
         implementation_1()
